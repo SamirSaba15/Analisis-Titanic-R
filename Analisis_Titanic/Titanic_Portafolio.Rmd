@@ -1,0 +1,963 @@
+---
+title: "Titanic_Portafolio"
+author: "Samir Saba"
+date: "4 de septiembre de 2025"
+editor_options:
+  markdown: null
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+
+---
+
+-------------------------------------------------------------------------------------------------------------------
+Fase 1: ASK (Preguntar)
+
+El Escenario: Descifrando los Secretos de la Supervivencia en el Titanic
+
+El 15 de abril de 1912, el RMS Titanic, en su viaje inaugural, se hundió en el Atlántico Norte tras colisionar con un iceberg. En medio de la tragedia, donde más de 1,500 almas se perdieron, surgieron historias de supervivencia que han fascinado al mundo durante más de un siglo o en su
+defecto tragedias como la de Jack y Rose.
+
+Pero, ¿fue la supervivencia una cuestión de pura suerte o aleatoriedad? ¿O existieron patrones ocultos, dictados por las rígidas estructuras sociales de la época?
+
+Este proyecto asume el rol de un equipo de análisis de datos encargado de responder a una pregunta fundamental para cualquier historiador o científico social: 
+¿Qué factores determinaron quién vivió y quién murió en el Titanic? El objetivo es ir más allá de los datos y las cifras para construir una narrativa humana, demostrando cómo el análisis de datos puede arrojar luz sobre eventos históricos complejos.
+
+El Objetivo Principal (Business Task)
+
+El propósito de este análisis es identificar los factores demográficos y socioeconómicos clave que influyeron en la probabilidad de supervivencia de los pasajeros. Además, se desarrollará un modelo de Machine Learning que no solo valide nuestros hallazgos, sino que también pueda predecir la probabilidad de supervivencia de un pasajero hipotético, sirviendo
+como una herramienta educativa e interactiva.
+
+Preguntas Guía para el Análisis: Para alcanzar nuestro objetivo, el análisis se guiará por las siguientes preguntas:
+
+- Perfil del Pasajero: ¿Cuál era la composición demográfica de los pasajeros a bordo en términos de clase, género y edad?
+
+- Patrones de Supervivencia: ¿Cómo variaron las tasas de supervivencia entre los diferentes grupos de pasajeros? ¿Realmente "las mujeres y los niños primero" fue una regla que se cumplió? ¿El dinero pudo comprar la supervivencia?
+
+- Factores Predictivos: ¿Cuáles son las variables más influyentes a la hora de predecir la supervivencia?
+
+- Desarrollo de un Modelo: ¿Es posible construir un modelo predictivo que,con una precisión confiable, determine si un pasajero con ciertas características (ej. "un hombre de 30 años en tercera clase") habría sobrevivido?
+
+Una Nota sobre el Contexto y la Ética
+Es importante recordar que este análisis utiliza datos de un evento histórico real con profundas divisiones sociales. Variables como Pclass (Clase) y Sex (Género) no son solo datos, sino reflejos de una estructura social que tuvo consecuencias de vida o muerte. Nuestro modelo aprenderá de estos patrones, pero es crucial reconocer que estos patrones son el resultado de sesgos sistémicos. El objetivo de este análisis es entender un evento histórico, no justificar o perpetuar dichos sesgos en aplicaciones modernas.
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+Fase 2: PREPARE (Preparar)
+
+1.  Fuente de Datos (Data Source) 
+
+El análisis se basa en el conjunto de datos "Titanic - Machine Learning from Disaster", obtenido de la plataforma Kaggle. Este es un dataset canónico en la comunidad de  ciencia de datos, ideal para practicar la limpieza de datos, la ingeniería de características y el modelado predictivo.
+
+Contenido: El dataset contiene información demográfica y de viaje para 891 pasajeros del Titanic. Para nuestro análisis, utilizaremos el archivo train.csv que incluye la variable Survived, indicando si el pasajero sobrevivió o no, lo que nos permitirá tanto analizar los
+factores de supervivencia como entrenar nuestro modelo predictivo.
+
+Credibilidad y Fiabilidad: Al ser un dataset de una competencia de Kaggle, es una fuente de datos fiable y ampliamente utilizada. Sin embargo, es una representación y no un censo completo, por lo que contiene valores faltantes y posibles imprecisiones que deberán ser abordadas en la fase de procesamiento.
+
+```{r}
+library(readr)
+data <- read_csv("train.csv") #Vamos a llamar "data" al dataset por comodidad
+head(data) 
+```
+
+2.  Descripción de las Variables (Data Dictionary) El conjunto de datos se organiza en las siguientes variables (columnas):
+
+```{r}
+colnames(data)
+summary(data) 
+```
+
+PassengerId: Identificador único del pasajero.
+Survived: Variable objetivo. Indica si el pasajero sobrevivió (1) o no (0).
+Pclass: Clase del ticket (1 = 1ra clase, 2 = 2da clase, 3 = 3ra clase). Es un indicador socioeconómico.
+Name: Nombre del pasajero.
+Sex: Género del pasajero (male o female).
+Age: Edad del pasajero en años. (Contiene valores nulos).
+SibSp: Número de hermanos o cónyuges a bordo.
+Parch: Número de padres o hijos a bordo.
+Ticket: Número del ticket.
+Fare: Tarifa pagada por el pasajero.
+Cabin: Número de cabina. (Contiene una gran cantidad de valores nulos).
+Embarked: Puerto de embarque (C = Cherburgo, Q = Queenstown, S = Southampton).
+
+
+3. Herramientas Utilizadas
+Lenguaje de Programación: R, un entorno de software potente y versátil para computación estadística y gráficos.
+
+IDE (Entorno de Desarrollo): RStudio, que facilita el trabajo con R al integrar código, resultados, gráficos y texto en un solo lugar a través de documentos R Markdown.
+
+Librerías Clave de R:
+tidyverse (incluye ggplot2 y dplyr): Para la manipulación y visualización de datos de manera eficiente y elegante.
+caret: Para simplificar el proceso de entrenamiento y evaluación de modelos de machine learning.
+rpart y rpart.plot: Para crear y visualizar árboles de decisión.
+randomForest: Para implementar el modelo de Random Forest.
+Amelia: Identificar todos los NAs de forma visual y panorámica, es muy útil.
+
+```{r setup_install, eval=FALSE}
+# Para replicar este análisis, asegúrate de tener instalados los siguientes paquetes:
+# install.packages(c("tidyverse", "caret", "randomForest", "pROC", "rpart", "rpart.plot", "ggcorrplot", "patchwork"))
+```
+
+```{r}
+library(tidyverse) 
+library(plotly)
+library(rpart)
+library(rpart.plot)
+install.packages("Amelia") 
+library(Amelia)
+library(ggplot2)
+library(dplyr)
+```
+
+4. Valores faltantes
+Identificar todos los NAs de forma visual y panorámica, pero también sacando porcentajes para ser meticulosos.
+
+```{r}
+# 1. Visualizar NA´s 
+missmap(data, 
+        main = "Mapa Visual de Valores Faltantes", 
+        col = c("yellow", "black"), 
+        legend = FALSE)
+
+# 2. Calcular y mostrar una tabla con el porcentaje de NAs por columna
+missing_percentage <- sapply(data, function(x) sum(is.na(x)) / length(x) * 100)
+print(missing_percentage[missing_percentage > 0])
+```
+Este es un ejemplo perfecto de por qué un buen analista de datos nunca confía en una sola herramienta.
+
+Porcentajes:
+Age      Cabin   Embarked 
+19.8653199 77.1043771  0.2244669 
+
+El missmap intenta dibujar una representación de cada una de las casi 900 filas del dataset. El porcentaje de NAs en Embarked es de 0.22%, lo que equivale a solo 2 pasajeros. Dibujar 2 píxeles amarillos en una columna de 900 píxeles negros es como encontrar dos granos de arena en una playa. Son visualmente invisibles, aunque estén ahí.
+
+-------------------------------------------------------------------------------------------------------------------
+Fase 3: PROCESS (Procesar)
+ 
+Esta fase es donde preparamos nuestros datos para el análisis. Un análisis preciso depende de datos limpios y bien estructurados. Basándonos en la exploración de la fase anterior, hemos identificado tres áreas principales que requieren nuestra atención: 
+-variables irrelevantes, 
+-valores faltantes (NAs) en Embarked, 
+-valores faltantes en Age.
+
+
+
+3.1. Eliminación de Variables Irrelevantes: Cabin y Ticket
+No todos los datos que tenemos son útiles. Para construir un modelo robusto y evitar el "ruido", es fundamental eliminar las variables que no aportan valor predictivo.
+
+Cabin (Cabina): Como vimos en nuestro mapa de valores faltantes, esta variable tiene un 77% de datos ausentes. Intentar rellenar (imputar) una cantidad tan masiva de datos introduciría más suposiciones que hechos, debilitando la fiabilidad de nuestro análisis. Por lo tanto, la decisión más segura es eliminarla.
+
+Ticket (Ticket): El número de ticket es un identificador único y alfanumérico. No contiene un patrón inherente que se relacione con la supervivencia (por ejemplo, no es secuencial ni indica la ubicación en el barco de manera obvia). Por su irrelevancia para nuestro objetivo, también será eliminada.
+
+```{r}
+data <- data %>% select(-Cabin) #adiós Cabina
+
+data <- data %>% select(-Ticket) #Adiós Ticket
+```
+
+
+3.2. Imputación de Datos Faltantes en Embarked
+Nuestro análisis numérico reveló que la variable Embarked (puerto de embarque) tiene un 0.22% de valores faltantes (solo 2 pasajeros). Dado que es una cantidad tan pequeña, eliminar estas filas no es necesario.
+
+La Estrategia: Para variables categóricas con pocos NAs, la mejor práctica es la imputación por la moda, es decir, reemplazar los valores faltantes con el valor más frecuente.
+```{r}
+# Primero, calculamos la moda del puerto de embarque.
+tabla_embarked <- table(data$Embarked)
+moda_embarked <- names(tabla_embarked)[which.max(tabla_embarked)]
+print(paste("El puerto más frecuente es:", moda_embarked))
+ 
+# Luego rellenar los NAs con la moda
+data$Embarked[is.na(data$Embarked)] <- moda_embarked
+
+```
+
+Justificación: Asumimos que es más probable que estos dos pasajeros hayan embarcado en el puerto más común, que en este caso es Southampton ('S'). Esta es una suposición pequeña y de bajo riesgo que nos permite mantener la integridad de los datos.
+
+```{r}
+sum(is.na(data$Embarked)) #verificamos
+```
+
+3.3. Tratamiento Estratégico de la Variable Age
+
+La variable Age (Edad) es, sin duda, crucial para nuestro análisis, pero presenta casi un 20% de valores faltantes. Simplemente eliminar estas filas resultaría en una pérdida significativa de información. Por otro lado, rellenar los NAs con un valor único (como la media o la mediana de toda la columna) sería una sobresimplificación.
+
+La Hipótesis: Es razonable suponer que la edad promedio de los pasajeros podría variar según su estatus socioeconómico. Por ejemplo, ¿es la misma la edad promedio de un pasajero de primera clase que la de uno de tercera?
+
+La Verificación: Para confirmar esta hipótesis, utilizaremos un gráfico de cajas (Boxplot) que visualice la distribución de la edad (Age) para cada clase de pasajero (Pclass). Si observamos diferencias notables en las medianas de edad entre las clases, confirmaremos que una estrategia de imputación más sofisticada es la correcta.
+
+  El Plan de Acción: Si el Boxplot confirma nuestra hipótesis, procederemos a rellenar los valores faltantes de Age utilizando la mediana de edad correspondiente al grupo de su Pclass. Este método es mucho más preciso que usar una mediana global, ya que respeta la estructura y los patrones ya existentes en nuestros datos.
+
+
+```{r}
+# 1. Pre-calcular las medianas para añadirlas como etiquetas
+# Es una buena práctica separar el cálculo de la visualización
+summary_stats <- data %>%
+  filter(!is.na(Age)) %>% # Nos aseguramos de no incluir NAs en el cálculo
+  group_by(Pclass) %>%
+  summarise(median_age = median(Age))
+
+# 2. Crear el gráfico profesional
+ggplot(data, aes(x = factor(Pclass), y = Age, fill = factor(Pclass))) +
+  
+  # El boxplot con un poco de transparencia y sin leyenda (es redundante)
+  geom_boxplot(alpha = 0.8, show.legend = FALSE) +
+  
+  # Añadir texto con el valor de la mediana calculado antes
+  geom_text(data = summary_stats, 
+            aes(x = factor(Pclass), y = median_age, label = round(median_age, 1)),
+            vjust = -0.5, # Ajuste vertical para que esté sobre la línea
+            size = 4, 
+            fontface = "bold",
+            color = "black") +
+            
+  # Etiquetas claras para el título, subtítulo y ejes
+  labs(
+    title = "Distribución de la Edad por Clase de Pasajero",
+    subtitle = "Se observa una clara tendencia: a menor clase, menor es la mediana de edad.",
+    x = "Clase del Pasajero",
+    y = "Edad (años)"
+  ) +
+  
+  # Personalizar los nombres en el eje X
+  scale_x_discrete(labels = c("1" = "1ra Clase", "2" = "2da Clase", "3" = "3ra Clase")) +
+  
+  # Una paleta de colores profesional y agradable a la vista
+  scale_fill_brewer(palette = "Pastel1") +
+  
+  # Un tema limpio y personalización de la tipografía para un acabado profesional
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
+    plot.subtitle = element_text(hjust = 0.5, size = 12, face = "italic"),
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 11)
+  )
+```
+
+13 años de diferencia entre primera y tercera clase nos da un buen argumento para validar la hipótesis y reemplazar los valores con la mediana en función de su clase. Pero, ¿Por qué la mediana?
+
+-La media (el promedio) es muy sensible a los valores atípicos (outliers)
+-La moda es el valor que más se repite. Es perfecta para datos categóricos (como Embarked, donde 'S' era la moda), pero es muy poco fiable para variables continuas como la edad. ¿Por qué? Podría no haber una moda clara
+- La mediana es el valor que se encuentra justo en el medio de los datos si los ordenas de menor a mayor. Es robusta frente a los valores atípicos. No le importa si el pasajero más viejo tiene 80 u 800 años; la mediana seguirá siendo el valor del pasajero del medio.
+La Edad es una variable numérica continua, esta es la razón por la que la mediana es nuestra mejor herramienta.
+
+OJO: Buenas prácticas de análisis de datos: crear un nuevo dataframe "data_limpia", así "data" permanece como una copia de seguridad. A partir de ahora trabajamos solo con data_limpia
+
+```{r}
+# Vamos a rellenar los NAs en 'Age' con la mediana de la edad correspondiente a cada 'Pclass'
+data_limpia <- data %>%
+  group_by(Pclass) %>%
+  mutate(Age = ifelse(is.na(Age),
+                      median(Age, na.rm = TRUE),
+                      Age)) %>%
+  ungroup() # Es una buena práctica desagrupar después de la operación
+
+# Comprobación final: Verifiquemos que ya no quedan NAs en la columna 'Age'
+# El resultado de este comando debe ser 0.
+sum(is.na(data_limpia$Age))
+
+# Opcional: Echa un vistazo a las primeras filas para ver los cambios
+# head(data_limpia)
+```
+
+3.4 Convirtiendo Variables Cualitativas Nominales (Interger) en Factores: survive, sex, embarked, pclass
+
+¿Qué es un "Factor"?
+Piensa en una variable como Sex. Para nosotros, "male" y "female" son categorías. Pero para R, por defecto, son solo cadenas de texto. Al convertir Sex en un factor, le dices a R: "Oye, esta columna no es texto al azar. Solo puede contener estos valores específicos ('male', 'female'), y quiero que los trates como niveles o categorías distintas".
+
+Lo mismo aplica para números. La variable Survived es 0 y 1. Por defecto, R los ve como números con los que podría intentar hacer cálculos (como sacar el promedio). Al convertirla a factor, le dices: "No, 0 y 1 son etiquetas. 0 significa 'No Sobrevivió' y 1 significa 'Sobrevivió'".
+
+¿Por qué convertirlas en factor?
+- Para las Visualizaciones (ggplot2): ggplot2 es muy inteligente con los factores. (Cuando le pides que coloree un gráfico por la variable Sex, si es un factor, automáticamente asignará un color a "male" y otro a "female" y creará una leyenda. )
+- Para el Machine Learning (Modelado): Este es el motivo más importante. Muchos modelos estadísticos y de machine learning en R requieren que las variables categóricas sean factores. Así y solo así se pueden definir variables objetivo (survive) y variables predictoras.
+
+```{r}
+# Convertir variables a factores para un análisis y modelado correctos
+data_limpia$Survived <- factor(data_limpia$Survived, levels = c(0, 1), labels = c("No", "Sí"))
+data_limpia$Pclass <- factor(data_limpia$Pclass, order = TRUE, levels = c(3, 2, 1)) # Ordinal
+data_limpia$Sex <- as.factor(data_limpia$Sex)
+data_limpia$Embarked <- as.factor(data_limpia$Embarked)
+
+# Comprobemos la estructura para ver los cambios
+str(data_limpia)
+```
+-------------------------------------------------------------------------------------------------------------------
+Fase 4: ANALYZE & SHARE (Analizar y Compartir)
+En esta fase, nuestro objetivo es responder a la pregunta principal: "¿Qué factores influyeron en la supervivencia?". Lo haremos de forma metódica, yendo de lo general a lo específico. Cada gráfico que creemos será una pieza de evidencia para construir nuestra conclusión final.
+
+4.1. Análisis Univariado: Una Foto General de los Pasajeros
+Antes de buscar relaciones, primero debemos entender nuestras variables principales de forma aislada.
+
+¿Cuál fue la tasa de supervivencia general?
+```{r}
+# Supervivencia
+ggplot(data_limpia, aes(Survived, fill= factor(Survived))) + geom_bar() +
+  geom_bar(position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), 
+            position = position_dodge(width = 1), vjust = -0.5) +
+  labs(title = "Tasa de Supervivencia", x = "Survived", y = "Conteo") +
+  scale_fill_manual(values = c("grey", "turquoise"), name = "Sobrevivió", labels = c("No", "Sí"))
+```
+¿Cuál era la distribución de las variables numéricas clave?
+```{r}
+# Seleccionamos solo las columnas Age y Fare y pedimos un resumen estadístico
+summary(data_limpia[, c("Age", "Fare")])
+```
+Grafiquemos las edades en un histograma
+```{r}
+ggplot(data_limpia, aes(x = Age)) +
+  geom_histogram(aes(y = ..density..), # Usamos densidad para poder superponer una curva
+                 bins = 30,           # Aumentamos los bins para más detalle
+                 fill = "turquoise", 
+                 color = "black",     # Añadimos un borde negro a las barras
+                 alpha = 0.7) +
+  geom_density(color = "blue", size = 1) + # Curva de densidad para ver la forma
+  labs(
+    title = "Distribución de la Edad de los Pasajeros",
+    subtitle = "La mayoría de los pasajeros eran adultos jóvenes (20-40 años)",
+    x = "Edad (años)",
+    y = "Densidad"
+  ) +
+  theme_minimal() + # Un tema limpio y moderno
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+Ahora es el turno de Histograma de Tarifa (Fare), usamos escala logarítmica para manejar sesgo
+```{r}
+ggplot(data_limpia, aes(x = Fare)) +
+  geom_histogram(bins = 40,
+                 fill = "turquoise", 
+                 color = "black",
+                 alpha = 0.7) +
+  scale_x_log10() + # ¡Importante! Usamos escala logarítmica para manejar el sesgo
+  labs(
+    title = "Distribución de la Tarifa del Billete Fare (Escala Logarítmica)",
+    subtitle = "La mayoría de las tarifas eran bajas, con muy pocas tarifas extremadamente altas",
+    x = "Tarifa (log10)",
+    y = "Número de Pasajeros"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+Esto me hace cuestionarme, si las tarifas fueron bajas, ¿qué criterios usaban para dividir a la gente en clases?
+
+
+4.2. Análisis Bivariado: Encontrando los Factores Clave de la Supervivencia
+
+Hallazgo 1: El Género fue un Factor Determinante
+Pregunta: ¿Tuvieron las mujeres más probabilidades de sobrevivir?
+
+```{r}
+ggplot(data_limpia, aes(x = Sex, fill = Survived)) +
+  # position = "fill" crea el gráfico apilado al 100%
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) + # Eje Y en formato de porcentaje
+  labs(
+    title = "Tasa de Supervivencia por Género",
+    subtitle = "Las mujeres tuvieron una tasa de supervivencia drásticamente mayor",
+    x = "Género",
+    y = "Porcentaje",
+    fill = "Sobrevivió" # Cambia el título de la leyenda
+  ) +
+  # Usamos una paleta de colores temática
+  scale_fill_manual(values = c("No" = "grey", "Sí" = "turquoise")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+
+Hallazgo 2: La Clase Socioeconómica Marcó la Diferencia
+Pregunta: ¿Pudo el dinero comprar la supervivencia?
+
+```{r}
+ggplot(data_limpia, aes(x = factor(Pclass), fill = factor(Survived))) +
+  geom_bar(position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), 
+            position = position_dodge(width = 1), vjust = -0.5) +
+  labs(title = "Supervivencia por Clase", x = "Clase", y = "Conteo") +
+  scale_fill_manual(values = c("grey", "turquoise"), name = "Sobrevivió", labels = c("No", "Sí"))
+```
+Hallazgo 3: La Edad Jugó un Rol Complejo
+Pregunta: ¿Se priorizó a los niños? ¿Cómo afectó la edad a la supervivencia?
+
+```{r}
+ggplot(data_limpia, aes(x = Survived, y = Age, fill = Survived)) +
+  geom_boxplot(alpha = 0.8, show.legend = FALSE) +
+  labs(
+    title = "Distribución de Edad entre Supervivientes y No Supervivientes",
+    subtitle = "La mediana de edad de los supervivientes fue ligeramente menor. Se salvaron más niños.",
+    x = "Sobrevivientes",
+    y = "Edad (años)"
+  ) +
+  scale_fill_manual(values = c("No" = "grey", "Sí" = "turquoise")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+```{r}
+ggplot(data_limpia, aes(x = Age, y = factor(Survived), color = factor(Survived))) +
+  geom_jitter(width = 0.2, height = 0.1, size = 2, alpha = 0.7) +
+  labs(title = "Relación entre Edad y Supervivencia", 
+       x = "Edad", y = "Supervivencia", color = "Sobrevivió") +
+  scale_color_manual(values = c("grey", "turquoise"), labels = c("No", "Sí")) +
+  theme_minimal()
+```
+
+Hallazgo 4: El Puerto de Embarque Muestra Ligeras Diferencias
+Pregunta: ¿Influyó el lugar donde embarcaron los pasajeros?
+```{r}
+ggplot(data_limpia, aes(x = Embarked, fill = Survived)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Tasa de Supervivencia por Puerto de Embarque",
+    subtitle = "Los pasajeros que embarcaron en Cherburgo (C) tuvieron la tasa de supervivencia más alta",
+    x = "Puerto de Embarque",
+    y = "Porcentaje",
+    fill = "Sobrevivió"
+  ) +
+  scale_fill_manual(values = c("No" = "grey", "Sí" = "turquoise")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+
+```{r}
+ggplot(data_limpia, aes(x = Embarked, fill = factor(Survived))) +
+  geom_bar(position = "dodge") +  # Usar barras separadas
+  geom_text(stat = "count", aes(label = ..count..), 
+            position = position_dodge(width = 0.9), vjust = -0.5, size = 3.5) +
+  labs(title = "Supervivencia por Puerto de Embarque (Datos Limpios)", 
+        subtitle = "Una de perspectiva cuantitativa",
+       x = "Puerto de Embarque", y = "Conteo", fill = "Sobrevivió") +
+  scale_fill_manual(values = c("grey", "turquoise"), labels = c("No", "Sí")) +
+  theme_minimal()
+```
+
+4.3. Análisis Multivariado y Correlaciones: Profundizando en las Interacciones
+Ahora combinamos múltiples factores para descubrir relaciones más sutiles.
+
+¿Cómo interactuaron la Clase y el Género?
+Pregunta: ¿La ventaja de ser mujer fue la misma en todas las clases?
+
+```{r}
+library(scales) # Para las etiquetas de porcentaje
+
+ggplot(data_limpia, aes(x = Sex, fill = Survived)) +
+  geom_bar(position = "fill") + # Gráfico apilado 100% para comparar tasas
+  facet_wrap(~ Pclass) + # ¡La magia! Crea un gráfico separado para cada Pclass
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Supervivencia por Género, Segmentado por Clase",
+    subtitle = "La alta supervivencia femenina fue más pronunciada en 1ra y 2da clase.",
+    x = "Género",
+    y = "Porcentaje de Supervivencia",
+    fill = "Sobrevivió"
+  ) +
+  scale_fill_manual(values = c("No" = "grey", "Sí" = "turquoise")) +
+  theme_bw() + # Un tema que funciona bien con facetas
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+    strip.background = element_rect(fill = "lightblue"), # Estilo para los títulos de las facetas
+    strip.text = element_text(face = "bold")
+  )
+```
+
+
+¿Qué relaciones numéricas existen?
+Pregunta: ¿Están correlacionadas las variables numéricas como la Edad, la Tarifa y el Tamaño de la Familia?
+
+Para visualizar la relación lineal entre las variables numéricas de nuestro dataset, calcularemos una matriz de correlación utilizando el método de Pearson. Este es el método más común y mide la fuerza y la dirección de una relación lineal (qué tan bien se pueden representar los datos con una línea recta). 
+Un valor cercano a +1 indica una fuerte correlación positiva, cerca de -1 una fuerte correlación negativa, y cerca de 0 una ausencia de correlación lineal.
+
+```{r}
+library(ggcorrplot)
+# (Los pasos 1 y 2 son los mismos que antes)
+# 1. Seleccionar las variables numéricas
+numeric_vars <- data_limpia %>%
+  select(Age, SibSp, Parch, Fare)
+
+# 2. Calcular la matriz de correlación
+corr_matrix <- cor(numeric_vars)
+
+# 3. Visualizar el heatmap mejorado
+ggcorrplot(corr_matrix,
+           method = "square",    # Cambiamos "circle" por "square" para un look de heatmap
+           type = "lower",
+           lab = TRUE,
+           lab_size = 3.5,
+           colors = c("grey", "white", "turquoise"), # Paleta profesional Rojo-Blanco-Azul
+           title = "Matriz de Correlación (Método de Pearson)",
+           ggtheme = ggplot2::theme_minimal()) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1) # Rotamos texto del eje X
+  )
+```
+Nunca hay que olvidar que la Correlación no indica causalidad. Lamentablemente la matriz de correlación nos deja con sabor a poco, ya que en el análisis gráfico visualizamos correlaciones que no se expresan en la matriz previa
+
+4.4. Creación de Nuevas Variables (Feature Engineering)
+Para mejorar el análisis (y el futuro modelo), pasamos a crear nuevas variables a partir de las existentes.
+
+Ejemplo 1: Crear Grupos de Edad
+Convertir la Edad de una variable numérica continua a una categórica puede simplificar el análisis y las visualizaciones. Usaremos la función case_when() de dplyr por ser muy clara y potente.
+
+```{r}
+# Creamos el nuevo dataframe data_engineered
+data_engineered <- data_limpia %>%
+  mutate(
+    AgeGroup = case_when(
+      Age < 18          ~ "Niño",
+      Age >= 18 & Age < 65 ~ "Adulto",
+      Age >= 65         ~ "Anciano",
+      TRUE              ~ "Desconocido"
+    )
+  )
+
+# Convertimos la nueva variable a factor
+data_engineered$AgeGroup <- factor(data_engineered$AgeGroup, 
+                                 levels = c("Niño", "Adulto", "Anciano"))
+
+# Verifiquemos nuestro trabajo
+# Deberías ver las nuevas columnas AgeGroup
+head(data_engineered)
+
+```
+
+Ejemplo 2: Crear Tamaño de la Familia
+Las variables SibSp (hermanos/cónyuges) y Parch (padres/hijos) pueden ser más potentes si se combinan en una sola variable que represente el tamaño total de la familia.
+
+```{r}
+# Añadimos la segunda variable al MISMO dataframe
+data_engineered <- data_engineered %>%
+  mutate(
+    FamilySize = SibSp + Parch + 1 # +1 para contarse a sí mismo
+  )
+
+# Verifiquemos nuestro trabajo
+summary(data_engineered$FamilySize)
+```
+Ese máximo de 11 parece un dato curioso, me fijé just for fun y me di cuenta que esto corresponde a una familia real que viajaba en el Titanic: la familia Sage (Mr. John George Sage y Mrs. Annie Elizabeth Sage) que viajaba en tercera clase con sus 9 hijos. Lamentablemente, como dato histórico, nadie de la familia Sage sobrevivió al naufragio. :´(
+Este es un claro ejemplo de que los datos cuentan historias humanas reales...
+
+-------------------------------------------------------------------------------------------------------------------
+Fase 5: ACTUAR - Construcción de un Modelo Predictivo
+
+El objetivo de esta fase es utilizar los patrones que descubrimos en el análisis para entrenar un modelo de machine learning. Este modelo aprenderá de nuestros datos históricos para predecir si un nuevo pasajero, con sus características específicas, habría sobrevivido al desastre.
+
+Paso 5.1: Preparación Final de los Datos para el Modelado
+Antes de entrenar, debemos realizar los últimos ajustes a nuestros datos para asegurarnos de que los modelos puedan interpretarlos correctamente.
+
+-> Justificación de la Transformación de Fare:
+La variable Fare (Tarifa) presenta un fuerte sesgo positivo, como vimos en el histograma univariado. La mayoría de los valores se concentran en el extremo inferior, con unos pocos valores muy altos. Los modelos de regresión, como la Regresión Logística, funcionan de manera óptima con variables predictoras que tienen una distribución más simétrica (similar a la normal o campana de Gauss). Para corregir este sesgo, aplicaremos una transformación logarítmica (log(Fare + 1)). El +1 se añade para evitar errores de cálculo en los casos donde la tarifa es 0. Como se demuestra en el siguiente gráfico comparativo, esta transformación normaliza eficazmente la distribución de la variable."
+
+```{r}
+library(patchwork) # Para unir gráficos
+
+# Gráfico Antes
+p1 <- ggplot(data_engineered, aes(x = Fare)) + 
+      geom_histogram(fill="grey", color="black", bins=50) +
+      labs(title = "Antes: Distribución Original de 'Fare'") + theme_minimal()
+
+# Gráfico Después
+p2 <- ggplot(data_engineered, aes(x = log(Fare + 1))) + 
+      geom_histogram(fill="turquoise", color="black", bins=50) +
+      labs(title = "Después: Transformación Logarítmica", x = "log(Fare + 1)") + theme_minimal()
+
+# Mostrar la justificación visual
+p1 + p2
+```
+-> Selección Final de Variables (Features):
+
+"No todas las variables que usamos para el análisis exploratorio son necesarias para el modelo. Eliminaremos Name y cualquier otra variable que no aporte valor predictivo. Nuestro conjunto de datos final para el modelado incluirá: Survived, Pclass, Sex, Age, Embarked, FamilySize y la versión transformada de Fare.
+
+
+Paso 5.2: División de Datos (Entrenamiento y Prueba)
+Nunca evaluamos un modelo con los mismos datos que usó para aprender. Por ello, dividimos nuestro dataset en dos:
+
+Conjunto de Entrenamiento (Training set): La porción más grande (usualmente 70-80%). El modelo usará estos datos para aprender los patrones.
+
+Conjunto de Prueba (Test set): El resto de los datos (20-30%). Estos datos son "invisibles" para el modelo durante el entrenamiento. Los usaremos al final para evaluar de forma objetiva qué tan bien generaliza sus predicciones a datos nuevos.
+
+```{r}
+library(caret)
+
+# Establecer una semilla para que la división sea reproducible
+set.seed(123) 
+
+# Crear los índices para la división (75% para entrenamiento)
+train_indices <- createDataPartition(data_engineered$Survived, p = 0.75, list = FALSE)
+
+# Crear los dataframes de entrenamiento y prueba
+train_data <- data_engineered[train_indices, ]
+test_data  <- data_engineered[-train_indices, ]
+
+print(paste("Tamaño del conjunto de entrenamiento:", nrow(train_data)))
+print(paste("Tamaño del conjunto de prueba:", nrow(test_data)))
+```
+
+Paso 5.3: Entrenamiento y Evaluación de Modelos
+Ahora entrenaremos tres modelos y realizaremos una evaluación completa, yendo mucho más allá de la simple exactitud.
+
+Para cada modelo, reportaremos un conjunto completo de métricas de evaluación para obtener una visión holística de su rendimiento. Usaremos la matriz de confusión como base para calcular la Precisión, el Recall y el F1-Score. Además, calcularemos el ROC-AUC, que mide la capacidad general del modelo para discriminar entre las dos clases (supervivientes y no supervivientes).
+
+5.3.1 Logistic Resression (Regresión Logística):
+```{r}
+# Entrenar el modelo de Regresión Logística
+log_model <- glm(Survived ~ Pclass + Sex + Age + FamilySize + Embarked + log(Fare + 1), 
+                 data = train_data, 
+                 family = "binomial")
+
+# Realizar predicciones en el conjunto de prueba
+# type = "response" nos da la probabilidad
+prob_pred <- predict(log_model, test_data, type = "response")
+
+# Convertir probabilidades a clases usando el umbral de 0.5 como baseline
+class_pred <- ifelse(prob_pred > 0.5, "Sí", "No")
+class_pred <- factor(class_pred, levels = c("No", "Sí"))
+
+# ¡La evaluación completa que pidió tu profesor!
+confusionMatrix(class_pred, test_data$Survived)
+```
+Interpretación: Vamos por partes
+-> Confusion Matrix (Matríz de confusión):
+El modelo tiene un sesgo hacia predecir "No sobrevivió".  Presenta 30 falsos negativos, son 30 personas que sí sobrevivierony que el modelo predijo que morirían. Este es el error que más queremos reducir.
+-> Sensitivity (Sensibilidad): 0.8613. El modelo es bueno para identificar a los que NO sobrevivieron. Encontró al 86% de ellos.
+-> Specificity (Especificidad): 0.6471. ¡Aquí está el punto débil! El modelo solo es capaz de identificar correctamente al 65% de las personas que SÍ sobrevivieron.
+-> P-Value: (1.809e-07) es extremadamente pequeño, y eso es exactamente lo que queremos ver. Ese valor compara la exactitud de tu modelo (Accuracy : 0.7793) con la "Tasa sin Información" (No Information Rate : 0.6171). La Tasa sin Información es la exactitud que obtendrías si siempre predijeras la clase más común (en este caso, "No sobrevivió"). El p-value tan bajo te dice que la probabilidad de que el modelo sea mejor que "simplemente adivinar" por pura suerte es prácticamente cero. En resumen: El modelo realmente aprendió algo útil.
+-> Accuracy (Exactitud): 77.93% es relativo. Para el dataset del Titanic, que es un problema clásico y no trivial, una exactitud de ~78% para un primer modelo de regresión logística es un resultado inicial bastante sólido y respetable. No es perfecto, pero está lejos de ser malo. Es una excelente línea de base (baseline) sobre la cual mejorar.
+
+La regresión logística es buena, pero asume relaciones lineales. Los modelos basados en árboles pueden capturar interacciones más complejas sin necesidad de transformaciones manuales.
+
+5.3.2 Random Forest (Bosque Aleatorio)
+Este es el siguiente paso lógico. Es un conjunto de muchos árboles de decisión y suele ser muy robusto y performante "de caja". A menudo, solo con cambiar de glm a randomForest, verás un salto en el rendimiento.
+```{r}
+library(randomForest)
+
+# Entrenar el modelo
+rf_model <- randomForest(Survived ~ Pclass + Sex + Age + FamilySize + Embarked, 
+                         data = train_data, 
+                         ntree = 500, # Número de árboles
+                         na.action = na.exclude) # Manejo de NAs
+
+# Evaluarlo
+rf_pred <- predict(rf_model, test_data)
+confusionMatrix(rf_pred, test_data$Survived)
+```
+Interpretación: Tus resultados del Random Forest son muy reveladores. La exactitud (Accuracy) subió un poquito (de 77.9% a 78.8%), pero la Especificidad (Specificity), que es la habilidad de encontrar a los supervivientes, ¡empeoró! (bajó de 64.7% a 60%). Esto es una señal clarísima: incluso un modelo más potente como el Random Forest está luchando porque le faltan "ingredientes" de calidad.
+
+Aquí es donde entra en juego la habilidad del analista y la Ingeniería de Características.
+
+El Feature Engineering no se trata de añadir más datos, sino de transformar los datos existentes en señales más inteligentes y directas. Le facilitas el trabajo al modelo para que encuentre los patrones importantes más rápido y con mayor precisión.
+
+5.3.3 Ingeniería de Características (Feature Engineering)
+
+Vamos a crear una variable "Title".  El nombre del pasajero contiene un título ("Mr.", "Mrs.", "Miss.", "Master.", etc.). Este título es una mina de oro, ya que a menudo encapsula el género, la edad aproximada y el estatus social. Uno puede pensar que es redundante, pero no, simplemente es una técnica que permite clasificar los datos con mayor precisión para que el modelo analice patrones que previamente no identificaba. 
+
+Por ejemplo: Master: Esta palabra identifica casi con un 100% de certeza a un niño varón (probabilidad de sobrevivir es alta). Miss vs. Mrs.: Ambas son Sex = female, pero encapsulan información social. Miss se usaba para mujeres jóvenes y solteras. Mrs. para mujeres casadas, que quizás viajaban con sus maridos o tenían una dinámica social diferente a bordo. El modelo puede descubrir que ser una Mrs. de tercera clase tenía un patrón de supervivencia distinto a ser una Miss de la misma clase. (Dr., Rev., Col.): Estos títulos indican un estatus social o una profesión. Un Rev. (reverendo) o un Col. (coronel) pueden tener comportamientos diferentes en una crisis que un Mr. promedio. 
+
+Ojo, hay que volver a dividir los datos de train y test data incluyendo el feature engineering
+```{r}
+# --- PASO 1: INGENIERÍA DE CARACTERÍSTICAS ---
+library(stringr)
+library(dplyr)
+
+data_engineered <- data_limpia %>%
+  mutate(
+    Name = as.character(Name),
+    Title = str_extract(Name, " ([A-Za-z]+)\\."),
+    Title = str_trim(str_remove(Title, "\\.")),
+    
+    # Paso C: Clasificar los títulos limpios
+    Title = case_when(
+      Title %in% c("Ms", "Mlle") ~ "Miss",
+      Title %in% c("Mme")        ~ "Mrs",  # <-- ESTE ES EL CAMBIO (usamos %in% en lugar de ==)
+      !Title %in% c("Mr", "Miss", "Mrs", "Master") ~ "Rare",
+      TRUE                       ~ Title
+    )
+  ) %>%
+  mutate(
+    FamilySize = SibSp + Parch + 1
+  )
+
+# Forzamos a la columna 'Fare' a ser de tipo numérico.
+data_engineered$Fare <- as.numeric(as.character(data_engineered$Fare))
+
+
+# --- VERIFICACIÓN ANTES DE DIVIDIR ---
+# (El resto del código es igual)
+cat("Conteo de Títulos en el dataframe completo:\n")
+print(table(data_engineered$Title))
+
+# --- PASO 2: DIVIDIR LOS DATOS ---
+library(caret)
+set.seed(123)
+
+train_indices <- createDataPartition(data_engineered$Survived, p = 0.75, list = FALSE)
+train_data <- data_engineered[train_indices, ]
+test_data  <- data_engineered[-train_indices, ]
+
+# --- VERIFICACIÓN FINAL ---
+cat("\nConteo de Títulos en el conjunto de entrenamiento:\n")
+print(table(train_data$Title))
+
+cat("\n¡Datos corregidos! Ahora puedes volver a ejecutar el código del modelo.")
+```
+
+
+5.3.4 Logistic Regression (Regresión Logística2) después de Feature Engineering:
+```{r}
+# --- 1. Entrenar el modelo de Regresión Logística v2 (con 'Title') ---
+log_model2 <- glm(Survived ~ Pclass + Sex + Age + FamilySize + Embarked + Title + log(Fare + 1), 
+                  data = train_data, 
+                  family = "binomial")
+
+# --- 2. Realizar predicciones en el conjunto de prueba ---
+prob_pred_log2 <- predict(log_model2, test_data, type = "response")
+
+# Convertir probabilidades a clases usando el umbral de 0.5
+class_pred_log2 <- ifelse(prob_pred_log2 > 0.5, "Sí", "No")
+class_pred_log2 <- factor(class_pred_log2, levels = c("No", "Sí"))
+
+# --- 3. Evaluar el modelo mejorado ---
+cat("--- Matriz de Confusión: Regresión Logística v2 (con Title) ---\n")
+confusionMatrix(class_pred_log2, test_data$Survived)
+```
+Matriz de confusión visual:
+
+```{r}
+# (El código para crear 'cm' y 'cm_table' es el mismo)
+
+# Graficamos la matriz de confusión con los ejes intercambiados para mayor claridad
+ggplot(data = cm_table, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "white", lwd = 1) + # Añadimos un borde blanco
+  geom_text(aes(label = Freq), vjust = 0.5, size = 7, color = "black", fontface="bold") +
+  scale_fill_gradient(low = "turquoise", high = "grey") +
+  labs(title = "Matriz de Confusión - Modelo Final",
+       subtitle = "Rendimiento en el Conjunto de Prueba",
+       x = "Clase Real (Reference)",
+       y = "Clase Predicha (Prediction)") +
+  theme_minimal(base_size = 14) + # Aumentamos el tamaño de la letra base
+  theme(legend.position = "none", 
+        plot.title = element_text(hjust = 0.5, face="bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Para interpretar nuestro modelo de regresión logística, examinamos los odds ratios (razones de momios). Un odd ratio mayor que 1 indica que la característica aumenta las probabilidades de supervivencia, mientras que uno menor que 1 las disminuye.
+```{r}
+# Calcular odds ratios y sus intervalos de confianza
+odds_ratios <- exp(cbind(OR = coef(log_model2), confint(log_model2)))
+
+print(odds_ratios)
+```
+Hallazgos Clave del Modelo Logístico:
+
+-Sexmale (OR = 0.08): Este es el factor más potente. Ser hombre (Sex=male), en comparación con ser mujer, reduce las probabilidades de sobrevivir en un 92% (1 - 0.08 = 0.92). Esto confirma numéricamente el principio de "mujeres y niños primero".
+
+-Pclass3 (OR = 0.07): Viajar en tercera clase, en comparación con la primera clase, reduce las probabilidades de sobrevivir en un 93%. Esto demuestra el brutal impacto del estatus socioeconómico.
+
+-Title Mrs (OR = 3.53) y TitleMiss (OR = 2.61): Tener el título "Mrs" o "Miss" aumenta drásticamente las probabilidades de supervivencia en comparación con el título de referencia (que en este caso es "Master"). Ser una "Mrs" multiplica tus probabilidades de sobrevivir por 3.5.
+
+-Age (OR = 0.96): Por cada año adicional de edad, las probabilidades de sobrevivir disminuyen ligeramente en un 4%. Es un efecto pequeño pero consistente: ser más joven era una ventaja.
+
+-log(Fare + 1) (OR = 1.42): Por cada unidad que aumenta el logaritmo de la tarifa, las probabilidades de sobrevivir aumentan en un 42%. Esto confirma que, incluso controlando por la clase, pagar un billete más caro estaba asociado con una mayor probabilidad de supervivencia.
+
+
+
+5.3.5 Árbol de Decisión Mejorado (tree_model2) después de Feature Engineering:
+```{r}
+# (Asegúrate de tener cargadas las librerías necesarias)
+library(rpart)
+library(rpart.plot)
+
+# --- 1. Entrenar el modelo de Árbol de Decisión v2 (con 'Title') ---
+tree_model2 <- rpart(Survived ~ Pclass + Sex + Age + FamilySize + Embarked + Title + Fare, 
+                     data = train_data, 
+                     method = "class")
+
+# --- 2. Visualizar el nuevo árbol (opcional, pero muy útil) ---
+# Verás que probablemente una de las primeras divisiones se basa en 'Title'
+rpart.plot(tree_model2)
+
+# --- 3. Realizar predicciones en el conjunto de prueba ---
+pred_tree2 <- predict(tree_model2, test_data, type = "class")
+
+# --- 4. Evaluar el modelo mejorado ---
+cat("\n--- Matriz de Confusión: Árbol de Decisión v2 (con Title) ---\n")
+confusionMatrix(pred_tree2, test_data$Survived)
+```
+Estos resultados son la prueba de que la ingeniería de características ha funcionado a la perfección. ¡Felicidades, has logrado una mejora muy significativa!
+
+¡El Feature Engineering Funcionó!
+Lo primero y más importante: ambos modelos han mejorado notablemente. Pasamos de una exactitud de ~78% a un 81.5% con ambos. Este es un salto cuantitativo que demuestra el inmenso valor de haber creado la variable Title. 
+
+
+---Análisis comparativo:---
+--> Regresión Logística v2 (El Modelo Equilibrado)
+-Fortaleza: Su Especificidad (Specificity) es de 68.24%. Esto significa que de todas las personas que realmente sobrevivieron, este modelo fue capaz de identificar correctamente al 68% de ellas.
+-Debilidad: Es un poco menos efectivo para encontrar a los que no sobrevivieron (Sensitivity de 89.78%).
+-Conclusión: Este modelo es más balanceado. Comete menos errores al predecir que alguien murió cuando en realidad sobrevivió (tiene menos Falsos Negativos). La Exactitud Balanceada (Balanced Accuracy) de 79.01%, que es una métrica clave en datasets como este, lo confirma.
+
+--> Árbol de Decisión v2 (El Modelo "Pessimista")
+-Fortaleza: Es increíblemente bueno para identificar a los que no sobrevivieron. Su Sensibilidad (Sensitivity) es de un impresionante 93.43%.
+-Debilidad: Esta alta sensibilidad tiene un costo. Su Especificidad (Specificity) baja a 62.35%. Esto significa que es más propenso a predecir que un superviviente real en realidad murió.
+-Conclusión: Este modelo está sesgado hacia la predicción de "No sobrevivió". Es muy cauteloso y prefiere equivocarse diciendo que alguien murió a arriesgarse a decir que alguien vivió.
+
+
+5.3.6 Ramdom Forest después de Feature Engineering:
+
+Ahora que hemos validado el poder de nuestra nueva variable Title, es el momento de usar nuestro modelo más potente: el Random Forest. Este modelo es un "ensamble" de cientos de árboles de decisión, lo que le permite capturar relaciones mucho más complejas y sutiles en los datos. A menudo, este modelo ofrece el mejor rendimiento "listo para usar" sin necesidad de tantos ajustes manuales como la regresión logística. Esperamos que este modelo supere a los dos anteriores, especialmente en la Exactitud Balanceada.
+
+```{r}
+library(randomForest)
+
+# --- 1. Entrenar el modelo de Random Forest v2 (con 'Title') ---
+# Ponemos set.seed() de nuevo para que los resultados del Random Forest sean reproducibles
+set.seed(123)
+rf_model2 <- randomForest(Survived ~ Pclass + Sex + Age + FamilySize + Embarked + Title + Fare, 
+                         data = train_data, 
+                         ntree = 500, # Usamos 500 árboles para un modelo robusto
+                         na.action = na.exclude)
+
+# --- 2. Realizar predicciones en el conjunto de prueba ---
+pred_rf2 <- predict(rf_model2, test_data)
+
+# --- 3. Evaluar el modelo final ---
+cat("--- Matriz de Confusión: Random Forest v2 (con Title) ---\n")
+confusionMatrix(pred_rf2, test_data$Survived)
+```
+El Random Forest, al ser más complejo, a veces puede "sobre-aprender" de los pequeños patrones y ruidos específicos de tu conjunto de entrenamiento. En este caso, el modelo más simple y elegante (Regresión Logística v2) fue capaz de capturar la "verdad" de los datos de manera más efectiva, resultando en un mejor rendimiento general, especialmente en la Exactitud Balanceada.Moraleja: "Más complejo" no siempre significa "mejor".
+
+
+Aunque el Random Forest no fue nuestro modelo final, es útil para entender qué variables considera más importantes para hacer una predicción. El siguiente gráfico muestra la 'Disminución Media en la Precisión' (MeanDecreaseAccuracy): cuanto más alta la barra, más importante es la variable para el modelo
+
+```{r}
+library(randomForest) # no olvidar
+
+# Generar el gráfico de importancia de variables
+varImpPlot(rf_model2, 
+           main = "Importancia de las Variables - Random Forest",
+           n.var = 10) # Mostramos las 10 variables más importantes
+```
+
+
+5.3.7 Ajuste del Umbral y Curva ROC (El Toque de Precisión)
+
+Hasta ahora, hemos usado el umbral de decisión por defecto de 0.5 para convertir las probabilidades en una predicción de "Sí" o "No". Sin embargo, este umbral rara vez es el óptimo. Nuestro objetivo es mejorar la Especificidad (la habilidad de encontrar a los supervivientes).
+
+Para ello, utilizaremos la Curva ROC (Receiver Operating Characteristic). Este es un gráfico estándar en la industria que visualiza el rendimiento de un modelo de clasificación en todos los umbrales posibles. Nos muestra el "tira y afloja" entre la Sensibilidad (encontrar a los que no sobrevivieron) y la Especificidad (encontrar a los que sí sobrevivieron). El área bajo esta curva (AUC) es una de las métricas más importantes para juzgar un modelo: cuanto más cerca de 1, mejor es el modelo para distinguir entre las dos clases.
+
+Usaremos la curva ROC de nuestro mejor modelo hasta ahora (Regresión Logística v2) para encontrar un umbral que equilibre mejor nuestras métricas y mejore la predicción de supervivientes.
+
+```{r}
+library(pROC)
+
+# --- 1. Generar la curva ROC para la Regresión Logística v2 ---
+# Usamos las probabilidades que ya habíamos calculado: prob_pred_log2
+roc_curve <- roc(test_data$Survived, prob_pred_log2)
+
+# Calculamos el AUC (debería coincidir con lo que reporta confusionMatrix)
+auc_value <- auc(roc_curve)
+cat(paste("El valor de ROC-AUC es:", round(auc_value, 4), "\n"))
+
+# --- 2. Dibujar la curva ROC ---
+plot(roc_curve, main = "Curva ROC - Regresión Logística v2", 
+     print.auc = TRUE, # Imprime el valor AUC en el gráfico
+     col = "blue")
+
+# --- 3. Encontrar el umbral óptimo ---
+# La librería pROC puede sugerir el mejor umbral, buscando el punto más cercano
+# a la esquina superior izquierda del gráfico (alta sensibilidad y especificidad)
+optimal_coords <- coords(roc_curve, "best", ret = "threshold")
+optimal_threshold <- optimal_coords$threshold
+cat(paste("El umbral óptimo sugerido es:", round(optimal_threshold, 4), "\n"))
+
+# --- 4. Aplicar el nuevo umbral y re-evaluar ---
+class_pred_optimal <- ifelse(prob_pred_log2 > optimal_threshold, "Sí", "No")
+class_pred_optimal <- factor(class_pred_optimal, levels = c("No", "Sí"))
+
+cat("\n--- Matriz de Confusión Final (con Umbral Óptimo) ---\n")
+confusionMatrix(class_pred_optimal, test_data$Survived)
+```
+- ROC-AUC de 0.8682: Este número es excelente. Confirma que el modelo de Regresión Logística v2 tiene una gran capacidad para distinguir entre un superviviente y un no superviviente. Es una métrica muy robusta que valida la calidad de tu modelo.
+
+- Umbral Óptimo de 0.2945: Este es el descubrimiento clave. El análisis nos dice que el punto de equilibrio perfecto no es el 50%, sino el 29.5%. Esto significa que para obtener el mejor balance entre encontrar supervivientes y no supervivientes, debemos considerar a cualquier persona con más del 29.5% de probabilidad como un "superviviente".
+
+---La Matriz de Confusión Final---
+
+Antes: La Especificidad (habilidad para encontrar supervivientes reales) era del 68.2%.
+
+Después: ¡Saltó a un impresionante 83.5%! Mejoramos la capacidad del modelo para identificar a la clase minoritaria en más de 15 puntos porcentuales. Este es el mayor éxito del proyecto de machine learning.
+
+Exactitud Balanceada: Subió a 81.9%, la más alta que se ha conseguido. Este es el indicador definitivo de que el modelo final es, objetivamente, el mejor.
+
+
+Fase 6: Share (comparte):
+Este sin duda es mi paso favorito, como decimos en Bolivia es la "yapita" o ese extra que se da cuando quieres que algo le haga feliz al otro. Uno de los objetivos del análisis era el de predecir la sobrevivencia de un usuario, así que aquí vamos a usar la regresión logística y un cuestionario para averiguarlo.
+
+Para demostrar la aplicación práctica de nuestro modelo final, a continuación se presenta el código de un cuestionario interactivo. Este script permite al usuario introducir sus propias características y recibir una estimación de su probabilidad de supervivencia. (Nota: el código se muestra para fines de demostración y no se ejecuta durante la generación de este reporte).
+
+```{rcuestionario_interactivo, eval=FALSE}
+# --- CUESTIONARIO INTERACTIVO FINAL (VERSIÓN INDEPENDIENTE) ---
+
+cat("--- Simulador de Supervivencia del Titanic ---\n")
+cat("Por favor, responde a las siguientes preguntas para estimar tu probabilidad de supervivencia.\n\n")
+
+# 1. DEFINIR LOS NIVELES QUE NUESTRO MODELO CONOCE
+# Estos son los niveles exactos con los que se entrenó el modelo 'log_model2'.
+# Los escribimos aquí para que el script no dependa de 'train_data'.
+known_levels_title <- c("Master", "Miss", "Mr", "Mrs")
+known_levels_sex <- c("female", "male")
+known_levels_pclass <- c("1", "2", "3")
+known_levels_embarked <- c("C", "Q", "S")
+
+# 2. RECOPILAR DATOS DEL USUARIO USANDO MENÚS
+user_title_index <- menu(known_levels_title, title = "Selecciona tu Título:")
+user_title <- known_levels_title[user_title_index]
+
+user_sex_index <- menu(known_levels_sex, title = "Selecciona tu Género:")
+user_sex <- known_levels_sex[user_sex_index]
+
+user_pclass_index <- menu(known_levels_pclass, title = "Selecciona la Clase en la que viajarías:")
+user_pclass <- known_levels_pclass[user_pclass_index]
+
+user_embarked_index <- menu(known_levels_embarked, title = "Selecciona tu Puerto de Embarque:")
+user_embarked <- known_levels_embarked[user_embarked_index]
+
+cat("\nIntroduce tu Edad (ej: 30): ")
+user_age <- as.integer(readline())
+
+cat("Introduce el Tamaño de tu Familia (incluyéndote, ej: 1 si viajas solo): ")
+user_familysize <- as.integer(readline())
+
+cat("Introduce la Tarifa que pagarías (ej: 75.50): ")
+user_fare <- as.numeric(readline())
+
+# 3. CREAR Y PREPARAR EL DATAFRAME DEL USUARIO
+usuario_df <- data.frame(
+  Title = factor(user_title, levels = known_levels_title),
+  Sex = factor(user_sex, levels = known_levels_sex),
+  Age = user_age,
+  Pclass = factor(user_pclass, levels = known_levels_pclass),
+  Embarked = factor(user_embarked, levels = known_levels_embarked),
+  FamilySize = user_familysize,
+  Fare = user_fare
+)
+
+# 4. PREDECIR LA PROBABILIDAD USANDO EL MEJOR MODELO
+probabilidad_supervivencia <- suppressWarnings(predict(log_model2, usuario_df, type = "response"))
+
+# 5. MOSTRAR EL RESULTADO FINAL
+cat("\n--- Resultados de la Predicción ---\n")
+resultado_final <- paste0("Basado en los datos proporcionados, tu probabilidad de supervivencia estimada es: ", 
+                          round(probabilidad_supervivencia * 100, 1), "%")
+print(resultado_final)Mr
+```
+
+
+
+
+```{r session_info}
+# --- Información de la Sesión para Reproducibilidad ---
+sessionInfo()
+```

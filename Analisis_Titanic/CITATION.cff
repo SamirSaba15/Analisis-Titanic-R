@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "Si usas este trabajo, por favor cita esta obra."
+title: "Titanic – Portafolio (R)"
+version: 1.0.0
+date-released: "2025-09-04"
+authors:
+  - family-names: "Saba"
+    given-names: "Samir"
+    # ORCID opcional (formato completo con https://)
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/TU_USUARIO/titanic-portafolio"
+license: "MIT"
+keywords:
+  - R
+  - Titanic
+  - Machine Learning
+  - EDA
