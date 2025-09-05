@@ -4,7 +4,7 @@
 
 ---
 
-### [Ver el Reporte Completo en HTML](https://NOMBRE_DE_USUARIO.github.io/NOMBRE_DEL_REPOSITORIO/Titanic_Portafolio.html) ---
+### [Ver el Reporte Completo en HTML](https://samirsaba15.github.io/Analisis-Titanic-R/) ---
 
 ### Objetivo del Proyecto
 
